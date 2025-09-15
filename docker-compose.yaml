@@ -1,0 +1,18 @@
+services:
+  angular-new:
+    image: node:24.8
+    container_name: angular-new
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: sh -c "[ ! -f angular.json ] && npm install -g @angular/cli@20.3.1 && ng new api-generator-ui --directory . --defaults --skip-git --skip-install --style=scss --strict --routing --prefix=apigen || echo 'Angular project already exists.'"
+
+  angular-run:
+    image: node:24.8
+    container_name: angular-run
+    working_dir: /app
+    ports:
+      - "4200:4200"
+    volumes:
+      - .:/app
+    command: sh -c "[ ! -d node_modules ] && npm install; npm start --host"
