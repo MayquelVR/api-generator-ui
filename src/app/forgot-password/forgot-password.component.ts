@@ -5,39 +5,39 @@ import { AuthService } from '../services/auth.service';
 import { RouterModule } from '@angular/router';
 
 @Component({
-  selector: 'apigen-login',
+  selector: 'apigen-forgot-password',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterModule],
-  templateUrl: './login.component.html'
+  templateUrl: './forgot-password.component.html'
 })
-export class LoginComponent {
-  loginForm: FormGroup;
-  loginError: string | null = null;
+export class ForgotPasswordComponent {
+  forgotForm: FormGroup;
+  submitted = false;
   loading = false;
+  error: string | null = null;
 
   constructor(private fb: FormBuilder, private auth: AuthService) {
-    this.loginForm = this.fb.group({
-      username: ['', Validators.required],
-      password: ['', Validators.required]
+    this.forgotForm = this.fb.group({
+      email: ['', [Validators.required, Validators.email]]
     });
   }
 
   onSubmit() {
-    if (this.loginForm.valid) {
+    if (this.forgotForm.valid) {
       this.loading = true;
-      this.auth.login(this.loginForm.value).subscribe({
+      this.auth.forgotPassword(this.forgotForm.value.email).subscribe({
         next: (res) => {
-          this.loginError = null;
+          this.submitted = true;
           this.loading = false;
-          // Handle successful login (e.g., redirect, save token)
+          this.error = null;
         },
         error: (err) => {
-          this.loginError = 'Invalid username or password.';
+          this.error = 'Failed to send reset email. Please try again.';
           this.loading = false;
         }
       });
     } else {
-      this.loginForm.markAllAsTouched();
+      this.forgotForm.markAllAsTouched();
     }
   }
 }

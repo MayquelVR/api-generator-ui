@@ -1,0 +1,80 @@
+<div class="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-100 to-blue-100">
+  <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md flex flex-col gap-6">
+    <h2 class="text-2xl font-bold text-center text-blue-700 mb-2">Create Account</h2>
+    <div *ngIf="error" class="text-red-500 text-center text-sm mb-2">
+      {{ error }}
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="username" class="font-medium text-gray-700">Username</label>
+      <input
+        id="username"
+        formControlName="username"
+        type="text"
+        placeholder="Username"
+        class="px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+      />
+      <div *ngIf="registerForm.get('username')?.invalid && registerForm.get('username')?.touched" class="text-red-500 text-sm">
+        <span *ngIf="registerForm.get('username')?.errors?.['required']">Username is required.</span>
+        <span *ngIf="registerForm.get('username')?.errors?.['minlength']">Username must be at least 3 characters.</span>
+      </div>
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="email" class="font-medium text-gray-700">Email</label>
+      <input
+        id="email"
+        formControlName="email"
+        type="email"
+        placeholder="Email"
+        class="px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+      />
+      <div *ngIf="registerForm.get('email')?.invalid && registerForm.get('email')?.touched" class="text-red-500 text-sm">
+        <span *ngIf="registerForm.get('email')?.errors?.['required']">Email is required.</span>
+        <span *ngIf="registerForm.get('email')?.errors?.['email']">Enter a valid email address.</span>
+      </div>
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="password" class="font-medium text-gray-700">Password</label>
+      <input
+        id="password"
+        formControlName="password"
+        type="password"
+        placeholder="Password"
+        class="px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+      />
+      <div *ngIf="registerForm.get('password')?.invalid && registerForm.get('password')?.touched" class="text-red-500 text-sm">
+        <span *ngIf="registerForm.get('password')?.errors?.['required']">Password is required.</span>
+        <span *ngIf="registerForm.get('password')?.errors?.['minlength']">Password must be at least 6 characters.</span>
+      </div>
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="confirmPassword" class="font-medium text-gray-700">Confirm Password</label>
+      <input
+        id="confirmPassword"
+        formControlName="confirmPassword"
+        type="password"
+        placeholder="Confirm password"
+        class="px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+      />
+      <div *ngIf="registerForm.get('confirmPassword')?.invalid && registerForm.get('confirmPassword')?.touched" class="text-red-500 text-sm">
+        Confirm password is required.
+      </div>
+      <div *ngIf="registerForm.errors?.['mismatch'] && registerForm.get('confirmPassword')?.touched" class="text-red-500 text-sm">
+        Passwords do not match.
+      </div>
+    </div>
+    <button
+      type="submit"
+      [disabled]="registerForm.invalid || loading"
+      class="w-full py-2 bg-blue-600 text-white font-semibold rounded hover:bg-blue-700 transition disabled:bg-gray-300 disabled:cursor-not-allowed"
+    >
+      <span *ngIf="!loading">Register</span>
+      <span *ngIf="loading">Processing...</span>
+    </button>
+    <div *ngIf="submitted" class="text-green-600 text-center text-sm mt-2">
+      Your account has been created successfully.
+    </div>
+    <div class="text-center mt-4">
+      <a routerLink="/login" class="text-blue-600 text-sm font-semibold hover:underline">Back to Login</a>
+    </div>
+  </form>
+</div>

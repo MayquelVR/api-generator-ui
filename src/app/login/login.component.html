@@ -1,0 +1,52 @@
+<div class="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-100 to-blue-100">
+  <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md flex flex-col gap-6">
+    <h2 class="text-2xl font-bold text-center text-blue-700 mb-2">Sign In</h2>
+    <div *ngIf="loginError" class="text-red-500 text-center text-sm mb-2">
+      {{ loginError }}
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="username" class="font-medium text-gray-700">Username</label>
+      <input
+        id="username"
+        formControlName="username"
+        type="text"
+        placeholder="Username"
+        class="px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+        autofocus
+        aria-label="Username"
+      />
+      <div *ngIf="loginForm.get('username')?.invalid && loginForm.get('username')?.touched" class="text-red-500 text-sm">
+        Username is required.
+      </div>
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="password" class="font-medium text-gray-700">Password</label>
+      <input
+        id="password"
+        formControlName="password"
+        type="password"
+        placeholder="Password"
+        class="px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+        aria-label="Password"
+      />
+      <div *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched" class="text-red-500 text-sm">
+        Password is required.
+      </div>
+    </div>
+    <button
+      type="submit"
+      [disabled]="loginForm.invalid || loading"
+      class="w-full py-2 bg-blue-600 text-white font-semibold rounded hover:bg-blue-700 transition disabled:bg-gray-300 disabled:cursor-not-allowed"
+    >
+      <span *ngIf="!loading">Sign In</span>
+      <span *ngIf="loading">Processing...</span>
+    </button>
+    <div class="text-center mt-4">
+      <span class="text-gray-600 text-sm">Don't have an account?</span>
+      <a routerLink="/register" class="text-blue-600 text-sm font-semibold hover:underline ml-1">Create one</a>
+    </div>
+    <div class="text-center mt-2">
+      <a routerLink="/forgot-password" class="text-blue-600 text-sm hover:underline">Forgot your password?</a>
+    </div>
+  </form>
+</div>
