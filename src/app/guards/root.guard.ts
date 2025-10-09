@@ -7,11 +7,9 @@ export const rootGuard: CanActivateFn = (route, state) => {
   const router = inject(Router);
 
   if (authService.isAuthenticated()) {
-    // If authenticated, redirect to collections
     router.navigate(['/collections']);
     return false;
   } else {
-    // If not authenticated, redirect to login
     router.navigate(['/login']);
     return false;
   }
