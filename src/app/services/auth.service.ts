@@ -99,42 +99,15 @@ export class AuthService {
   shouldRefreshToken(): boolean {
     const expirationTime = localStorage.getItem('token_expiration');
     if (!expirationTime) {
-      console.log('⚠️ No expiration time found');
       return false;
     }
 
     const timeLeft = parseInt(expirationTime) - Date.now();
-    const minutesLeft = Math.floor(timeLeft / 60000);
-
-    console.log(`⏰ Token expires in ${minutesLeft} minutes (${timeLeft}ms)`);
 
     const shouldRefresh = timeLeft < 5 * 60 * 1000; // 5 minutos
     if (shouldRefresh) {
-      console.log('🔔 Token should be refreshed!');
     }
 
     return shouldRefresh;
-  }
-
-  getTokenInfo(): void {
-    const expirationTime = localStorage.getItem('token_expiration');
-    const token = this.getAccessToken();
-    const refreshToken = this.getRefreshToken();
-
-    if (!expirationTime) {
-      console.log('❌ No token expiration found');
-      return;
-    }
-
-    const timeLeft = parseInt(expirationTime) - Date.now();
-    const minutesLeft = Math.floor(timeLeft / 60000);
-    const secondsLeft = Math.floor((timeLeft % 60000) / 1000);
-
-    console.log('📊 Token Info:');
-    console.log(`  - Has Access Token: ${token ? 'Yes' : 'No'}`);
-    console.log(`  - Has Refresh Token: ${refreshToken ? 'Yes' : 'No'}`);
-    console.log(`  - Expiration: ${new Date(parseInt(expirationTime)).toLocaleString()}`);
-    console.log(`  - Time Left: ${minutesLeft}m ${secondsLeft}s`);
-    console.log(`  - Should Refresh: ${this.shouldRefreshToken() ? 'YES' : 'NO'}`);
   }
 }
