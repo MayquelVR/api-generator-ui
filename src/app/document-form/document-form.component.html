@@ -1,0 +1,230 @@
+<div class="min-h-screen bg-gradient-to-br from-gray-100 to-blue-100 py-8">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Loading Schema -->
+    <div *ngIf="loadingSchema" class="bg-white rounded-xl shadow-lg p-8 text-center">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+      <p class="mt-4 text-gray-600">Loading collection schema...</p>
+    </div>
+
+    <!-- Form -->
+    <form *ngIf="!loadingSchema" [formGroup]="documentForm" (ngSubmit)="onSubmit()" class="bg-white rounded-xl shadow-lg p-8">
+      <!-- Header -->
+      <div class="mb-6">
+        <h2 class="text-2xl font-bold text-blue-700 mb-2">
+          {{ isEditMode ? 'Edit Document' : 'Create New Document' }}
+        </h2>
+        <p class="text-gray-600">Collection: <span class="font-semibold">{{ collectionName }}</span></p>
+      </div>
+
+      <!-- Error Message -->
+      <div *ngIf="error" class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+        {{ error }}
+      </div>
+
+      <!-- Dynamic Fields Based on Schema -->
+      <div class="space-y-6 mb-6">
+        <ng-container *ngFor="let field of formFields">
+          <div [style.marginLeft.px]="field.level * 24">
+
+            <!-- Simple Fields: STRING, INTEGER, DECIMAL, BOOLEAN, DATE -->
+            <div *ngIf="field.type !== 'OBJECT' && field.type !== 'ARRAY'">
+              <label class="block text-sm font-medium text-gray-700 mb-1">
+                {{ field.name }}
+                <span *ngIf="field.required" class="text-red-500">*</span>
+                <span class="text-gray-500 text-xs ml-2">({{ field.type }})</span>
+              </label>
+
+              <!-- STRING -->
+              <input
+                *ngIf="field.type === 'STRING'"
+                [formControl]="getControl(field.path)"
+                type="text"
+                [attr.maxlength]="field.maxLength || null"
+                class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+              />
+
+              <!-- INTEGER -->
+              <input
+                *ngIf="field.type === 'INTEGER'"
+                [formControl]="getControl(field.path)"
+                type="number"
+                step="1"
+                class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+              />
+
+              <!-- DECIMAL -->
+              <input
+                *ngIf="field.type === 'DECIMAL'"
+                [formControl]="getControl(field.path)"
+                type="number"
+                step="0.01"
+                class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+              />
+
+              <!-- DATE -->
+              <input
+                *ngIf="field.type === 'DATE'"
+                [formControl]="getControl(field.path)"
+                type="date"
+                class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+              />
+
+              <!-- BOOLEAN -->
+              <div *ngIf="field.type === 'BOOLEAN'" class="flex items-center">
+                <input
+                  [formControl]="getControl(field.path)"
+                  type="checkbox"
+                  class="h-5 w-5 text-blue-600 focus:ring-blue-400 border-gray-300 rounded"
+                />
+                <span class="ml-2 text-sm text-gray-600">Check if true</span>
+              </div>
+
+              <!-- Validation Errors -->
+              <div *ngIf="getControl(field.path)?.invalid && getControl(field.path)?.touched" class="text-red-500 text-sm mt-1">
+                <span *ngIf="getControl(field.path)?.hasError('required')">This field is required.</span>
+                <span *ngIf="getControl(field.path)?.hasError('maxlength')">
+                  Maximum length is {{ field.maxLength }} characters.
+                </span>
+              </div>
+            </div>
+
+            <!-- OBJECT Fields -->
+            <div *ngIf="field.type === 'OBJECT'">
+              <div class="border-l-4 border-blue-400 pl-4 mb-2">
+                <h4 class="text-md font-semibold text-blue-700">
+                  {{ field.name }}
+                  <span *ngIf="field.required" class="text-red-500">*</span>
+                  <span class="text-gray-500 text-xs ml-2">(OBJECT)</span>
+                </h4>
+              </div>
+            </div>
+
+            <!-- ARRAY Fields -->
+            <div *ngIf="field.type === 'ARRAY'">
+              <div class="border border-gray-300 rounded p-4 bg-gray-50">
+                <div class="flex justify-between items-center mb-3">
+                  <h4 class="text-md font-semibold text-gray-800">
+                    {{ field.name }}
+                    <span *ngIf="field.required" class="text-red-500">*</span>
+                    <span class="text-gray-500 text-xs ml-2">(ARRAY)</span>
+                  </h4>
+                  <button
+                    type="button"
+                    (click)="addArrayItem(field.path)"
+                    class="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition"
+                  >
+                    + Add Item
+                  </button>
+                </div>
+
+                <!-- Array Items -->
+                <div *ngIf="getArrayItemControls(field.path).length === 0" class="text-gray-500 text-sm text-center py-4">
+                  No items yet. Click "Add Item" to start.
+                </div>
+
+                <div *ngFor="let item of getArrayItemControls(field.path); let i = index" class="mb-3 p-3 border border-gray-200 rounded bg-white">
+                  <div class="flex justify-between items-start mb-2">
+                    <span class="text-sm font-medium text-gray-700">Item {{ i + 1 }}</span>
+                    <button
+                      type="button"
+                      (click)="removeArrayItem(field.path, i)"
+                      class="px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition"
+                    >
+                      Remove
+                    </button>
+                  </div>
+
+                  <!-- Array Item Input (Primitive) -->
+                  <input
+                    *ngIf="isFormControl(item)"
+                    [formControl]="asFormControl(item)"
+                    type="text"
+                    class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+                    placeholder="Enter value"
+                  />
+
+                  <!-- Array Item Input (Object) -->
+                  <div *ngIf="isFormGroup(item)" [formGroup]="asFormGroup(item)" class="space-y-3 pl-2 border-l-2 border-blue-300">
+                    <div *ngFor="let fieldKey of getObjectKeysForArrayItem(field.path)" class="space-y-1">
+                      <label class="block text-xs font-medium text-gray-700">
+                        {{ fieldKey }}
+                        <span *ngIf="isArrayItemFieldRequired(field.path, fieldKey)" class="text-red-500">*</span>
+                        <span class="text-gray-500 text-xs ml-1">({{ getArrayItemFieldType(field.path, fieldKey) }})</span>
+                      </label>
+
+                      <!-- STRING -->
+                      <input
+                        *ngIf="getArrayItemFieldType(field.path, fieldKey) === 'STRING'"
+                        [formControlName]="fieldKey"
+                        type="text"
+                        class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+                        [placeholder]="'Enter ' + fieldKey"
+                      />
+
+                      <!-- INTEGER -->
+                      <input
+                        *ngIf="getArrayItemFieldType(field.path, fieldKey) === 'INTEGER'"
+                        [formControlName]="fieldKey"
+                        type="number"
+                        step="1"
+                        class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+                        [placeholder]="'Enter ' + fieldKey"
+                      />
+
+                      <!-- DECIMAL -->
+                      <input
+                        *ngIf="getArrayItemFieldType(field.path, fieldKey) === 'DECIMAL'"
+                        [formControlName]="fieldKey"
+                        type="number"
+                        step="0.01"
+                        class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+                        [placeholder]="'Enter ' + fieldKey"
+                      />
+
+                      <!-- DATE -->
+                      <input
+                        *ngIf="getArrayItemFieldType(field.path, fieldKey) === 'DATE'"
+                        [formControlName]="fieldKey"
+                        type="date"
+                        class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+                      />
+
+                      <!-- BOOLEAN -->
+                      <div *ngIf="getArrayItemFieldType(field.path, fieldKey) === 'BOOLEAN'" class="flex items-center">
+                        <input
+                          [formControlName]="fieldKey"
+                          type="checkbox"
+                          class="h-4 w-4 text-blue-600 focus:ring-blue-400 border-gray-300 rounded"
+                        />
+                        <span class="ml-2 text-xs text-gray-600">Check if true</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </ng-container>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex gap-4 mt-8">
+        <button
+          type="submit"
+          [disabled]="documentForm.invalid || loading"
+          class="flex-1 py-3 bg-blue-600 text-white font-semibold rounded hover:bg-blue-700 transition disabled:bg-gray-300 disabled:cursor-not-allowed"
+        >
+          <span *ngIf="!loading">{{ isEditMode ? 'Update Document' : 'Create Document' }}</span>
+          <span *ngIf="loading">{{ isEditMode ? 'Updating...' : 'Creating...' }}</span>
+        </button>
+        <a
+          [routerLink]="['/collections', collectionName, 'documents']"
+          class="flex-1 py-3 bg-gray-300 text-gray-700 font-semibold rounded hover:bg-gray-400 transition text-center"
+        >
+          Cancel
+        </a>
+      </div>
+    </form>
+  </div>
+</div>

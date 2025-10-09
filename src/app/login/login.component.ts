@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../services/auth.service';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 
 @Component({
   selector: 'apigen-login',
@@ -15,7 +15,7 @@ export class LoginComponent {
   loginError: string | null = null;
   loading = false;
 
-  constructor(private fb: FormBuilder, private auth: AuthService) {
+  constructor(private fb: FormBuilder, private auth: AuthService, private router: Router) {
     this.loginForm = this.fb.group({
       username: ['', Validators.required],
       password: ['', Validators.required]
@@ -29,7 +29,12 @@ export class LoginComponent {
         next: (res) => {
           this.loginError = null;
           this.loading = false;
-          // Handle successful login (e.g., redirect, save token)
+          // Save JWT token to localStorage
+          if (res.token) {
+            localStorage.setItem('auth_token', res.token);
+          }
+          // Redirect to collections page
+          this.router.navigate(['/collections']);
         },
         error: (err) => {
           this.loginError = 'Invalid username or password.';

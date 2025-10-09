@@ -1,6 +1,14 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, tap } from 'rxjs';
+
+interface LoginResponse {
+  username: string;
+  email: string;
+  token: string;
+  refreshToken: string;
+  expiresIn: number;
+}
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -12,8 +20,39 @@ export class AuthService {
     return this.http.post(`${this.apiUrl}/auth/register`, data);
   }
 
-  login(data: { username: string; password: string }): Observable<any> {
-    return this.http.post(`${this.apiUrl}/auth/login`, data);
+  login(data: { username: string; password: string }): Observable<LoginResponse> {
+    return this.http.post<LoginResponse>(`${this.apiUrl}/auth/login`, data).pipe(
+      tap(response => {
+        // Guardar ambos tokens
+        this.setAccessToken(response.token);
+        this.setRefreshToken(response.refreshToken);
+
+        // Guardar tiempo de expiración
+        const expirationTime = Date.now() + response.expiresIn;
+        localStorage.setItem('token_expiration', expirationTime.toString());
+
+        // Guardar info del usuario
+        localStorage.setItem('user_info', JSON.stringify({
+          username: response.username,
+          email: response.email
+        }));
+      })
+    );
+  }
+
+  refreshToken(): Observable<LoginResponse> {
+    const refreshToken = this.getRefreshToken();
+    return this.http.post<LoginResponse>(`${this.apiUrl}/auth/refresh`, { refreshToken }).pipe(
+      tap(response => {
+        // Actualizar tokens
+        this.setAccessToken(response.token);
+        this.setRefreshToken(response.refreshToken);
+
+        // Actualizar tiempo de expiración
+        const expirationTime = Date.now() + response.expiresIn;
+        localStorage.setItem('token_expiration', expirationTime.toString());
+      })
+    );
   }
 
   forgotPassword(email: string): Observable<any> {
@@ -26,5 +65,48 @@ export class AuthService {
 
   verifyAccount(token: string): Observable<any> {
     return this.http.post(`${this.apiUrl}/auth/verify`, { token });
+  }
+
+  logout(): void {
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('token_expiration');
+    localStorage.removeItem('user_info');
+  }
+
+  // Access Token
+  getAccessToken(): string | null {
+    return localStorage.getItem('auth_token');
+  }
+
+  setAccessToken(token: string): void {
+    localStorage.setItem('auth_token', token);
+  }
+
+  // Refresh Token
+  getRefreshToken(): string | null {
+    return localStorage.getItem('refresh_token');
+  }
+
+  setRefreshToken(token: string): void {
+    localStorage.setItem('refresh_token', token);
+  }
+
+  // Legacy support
+  getToken(): string | null {
+    return this.getAccessToken();
+  }
+
+  isAuthenticated(): boolean {
+    return this.getAccessToken() !== null;
+  }
+
+  // Verificar si el token está cerca de expirar (menos de 5 minutos)
+  shouldRefreshToken(): boolean {
+    const expirationTime = localStorage.getItem('token_expiration');
+    if (!expirationTime) return false;
+
+    const timeLeft = parseInt(expirationTime) - Date.now();
+    return timeLeft < 5 * 60 * 1000; // 5 minutos
   }
 }
