@@ -1,10 +1,16 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, Inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule, Router } from '@angular/router';
 import { SafeHtml } from '@angular/platform-browser';
-import { CollectionService, DocumentResponse } from '../services/collection.service';
-import { AuthService } from '../services/auth.service';
 import { JsonFormatterService } from '../services/json-formatter.service';
+import { Document } from '../domain/models/document.model';
+import { GetDocumentsUseCase } from '../application/use-cases/get-documents.use-case';
+import { DeleteDocumentUseCase } from '../application/use-cases/delete-document.use-case';
+import { LogoutUseCase } from '../application/use-cases/logout.use-case';
+import { IDocumentRepository } from '../domain/ports/document-repository.port';
+import { IAuthRepository } from '../domain/ports/auth-repository.port';
+import { IStoragePort } from '../domain/ports/storage.port';
+import { DOCUMENT_REPOSITORY, AUTH_REPOSITORY, STORAGE_PORT } from '../app.config';
 
 @Component({
   selector: 'apigen-documents',
@@ -15,18 +21,29 @@ import { JsonFormatterService } from '../services/json-formatter.service';
 })
 export class DocumentsComponent implements OnInit {
   collectionName: string = '';
-  documents: DocumentResponse[] = [];
+  documents: Document[] = [];
   loading = false;
   error: string | null = null;
   expandedDocuments: Set<number> = new Set();
 
+  // 🏗️ Casos de Uso (Hexagonal Architecture)
+  private getDocumentsUseCase: GetDocumentsUseCase;
+  private deleteDocumentUseCase: DeleteDocumentUseCase;
+  private logoutUseCase: LogoutUseCase;
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private collectionService: CollectionService,
-    private authService: AuthService,
-    private jsonFormatter: JsonFormatterService
-  ) {}
+    private jsonFormatter: JsonFormatterService,
+    @Inject(DOCUMENT_REPOSITORY) private documentRepository: IDocumentRepository,
+    @Inject(AUTH_REPOSITORY) private authRepository: IAuthRepository,
+    @Inject(STORAGE_PORT) private storage: IStoragePort
+  ) {
+    // Instanciar casos de uso
+    this.getDocumentsUseCase = new GetDocumentsUseCase(this.documentRepository);
+    this.deleteDocumentUseCase = new DeleteDocumentUseCase(this.documentRepository);
+    this.logoutUseCase = new LogoutUseCase(this.authRepository, this.storage);
+  }
 
   ngOnInit() {
     this.collectionName = this.route.snapshot.paramMap.get('collectionName') || '';
@@ -38,13 +55,15 @@ export class DocumentsComponent implements OnInit {
   loadDocuments() {
     this.loading = true;
     this.error = null;
-    this.collectionService.listDocuments(this.collectionName).subscribe({
+
+    // 🏗️ Usando GetDocumentsUseCase
+    this.getDocumentsUseCase.execute(this.collectionName).subscribe({
       next: (documents) => {
         this.documents = documents;
         this.loading = false;
       },
       error: (err) => {
-        this.error = 'Failed to load documents.';
+        this.error = err.message || 'Failed to load documents.';
         this.loading = false;
       }
     });
@@ -52,12 +71,13 @@ export class DocumentsComponent implements OnInit {
 
   deleteDocument(documentId: number) {
     if (confirm('Are you sure you want to delete this document?')) {
-      this.collectionService.deleteDocument(this.collectionName, documentId).subscribe({
+      // 🏗️ Usando DeleteDocumentUseCase
+      this.deleteDocumentUseCase.execute(this.collectionName, documentId).subscribe({
         next: () => {
           this.loadDocuments();
         },
         error: (err) => {
-          this.error = 'Failed to delete document.';
+          this.error = err.message || 'Failed to delete document.';
         }
       });
     }
@@ -121,7 +141,8 @@ export class DocumentsComponent implements OnInit {
   }
 
   logout() {
-    this.authService.logout();
+    // 🏗️ Usando LogoutUseCase
+    this.logoutUseCase.execute();
     this.router.navigate(['/login']);
   }
 }

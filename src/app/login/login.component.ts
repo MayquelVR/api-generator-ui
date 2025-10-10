@@ -1,8 +1,11 @@
-import { Component } from '@angular/core';
+import { Component, Inject } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { AuthService } from '../services/auth.service';
 import { RouterModule, Router } from '@angular/router';
+import { LoginUseCase } from '../application/use-cases/login.use-case';
+import { IAuthRepository } from '../domain/ports/auth-repository.port';
+import { IStoragePort } from '../domain/ports/storage.port';
+import { AUTH_REPOSITORY, STORAGE_PORT } from '../app.config';
 
 @Component({
   selector: 'apigen-login',
@@ -15,30 +18,55 @@ export class LoginComponent {
   loginError: string | null = null;
   loading = false;
 
-  constructor(private fb: FormBuilder, private auth: AuthService, private router: Router) {
+  // 🏗️ Caso de Uso (Hexagonal Architecture)
+  private loginUseCase: LoginUseCase;
+
+  constructor(
+    private fb: FormBuilder,
+    private router: Router,
+    @Inject(AUTH_REPOSITORY) private authRepository: IAuthRepository,
+    @Inject(STORAGE_PORT) private storage: IStoragePort
+  ) {
     this.loginForm = this.fb.group({
       username: ['', Validators.required],
       password: ['', Validators.required]
     });
+
+    // Instanciar caso de uso
+    this.loginUseCase = new LoginUseCase(this.authRepository, this.storage);
   }
 
   onSubmit() {
     if (this.loginForm.valid) {
       this.loading = true;
-      this.auth.login(this.loginForm.value).subscribe({
-        next: (res) => {
-          this.loginError = null;
+      this.loginError = null;
+      const { username, password } = this.loginForm.value;
+
+      // 🏗️ Usando LoginUseCase
+      this.loginUseCase.execute(username, password).subscribe({
+        next: (user) => {
           this.loading = false;
-          // Save JWT token to localStorage
-          if (res.token) {
-            localStorage.setItem('auth_token', res.token);
+          if (user && user.token) {
+            this.router.navigate(['/collections']);
+          } else {
+            this.loginError = 'Invalid response from server.';
           }
-          // Redirect to collections page
-          this.router.navigate(['/collections']);
         },
         error: (err) => {
-          this.loginError = 'Invalid username or password.';
           this.loading = false;
+
+          // Extraer mensaje de error del backend
+          if (err.error && err.error.message) {
+            this.loginError = err.error.message;
+          } else if (err.message) {
+            this.loginError = err.message;
+          } else if (err.status === 401 || err.status === 403) {
+            this.loginError = 'Invalid username or password.';
+          } else if (err.status === 0) {
+            this.loginError = 'Cannot connect to server. Please try again.';
+          } else {
+            this.loginError = 'An error occurred. Please try again.';
+          }
         }
       });
     } else {

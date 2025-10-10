@@ -1,9 +1,10 @@
-import { Component } from '@angular/core';
+import { Component, Inject } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { AuthService } from '../services/auth.service';
-import { ActivatedRoute } from '@angular/router';
-import { RouterModule } from '@angular/router';
+import { ActivatedRoute, RouterModule } from '@angular/router';
+import { ResetPasswordUseCase } from '../application/use-cases/reset-password.use-case';
+import { IAuthRepository } from '../domain/ports/auth-repository.port';
+import { AUTH_REPOSITORY } from '../app.config';
 
 @Component({
   selector: 'apigen-reset-password',
@@ -18,10 +19,13 @@ export class ResetPasswordComponent {
   error: string | null = null;
   token: string | null = null;
 
+  // 🏗️ Caso de Uso (Hexagonal Architecture)
+  private resetPasswordUseCase: ResetPasswordUseCase;
+
   constructor(
     private fb: FormBuilder,
-    private auth: AuthService,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    @Inject(AUTH_REPOSITORY) private authRepository: IAuthRepository
   ) {
     this.resetForm = this.fb.group({
       newPassword: ['', [Validators.required, Validators.minLength(6)]],
@@ -29,6 +33,9 @@ export class ResetPasswordComponent {
     }, { validators: this.passwordsMatch });
 
     this.token = this.route.snapshot.queryParamMap.get('token');
+
+    // Instanciar caso de uso
+    this.resetPasswordUseCase = new ResetPasswordUseCase(this.authRepository);
   }
 
   passwordsMatch(form: FormGroup) {
@@ -40,14 +47,17 @@ export class ResetPasswordComponent {
   onSubmit() {
     if (this.resetForm.valid && this.token) {
       this.loading = true;
-      this.auth.resetPassword(this.token, this.resetForm.value.newPassword).subscribe({
-        next: (res) => {
+      const newPassword = this.resetForm.value.newPassword;
+
+      // 🏗️ Usando ResetPasswordUseCase
+      this.resetPasswordUseCase.execute(this.token, newPassword).subscribe({
+        next: () => {
           this.submitted = true;
           this.loading = false;
           this.error = null;
         },
         error: (err) => {
-          this.error = 'Failed to reset password. Please try again.';
+          this.error = err.message || 'Failed to reset password. Please try again.';
           this.loading = false;
         }
       });

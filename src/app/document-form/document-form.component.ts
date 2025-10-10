@@ -1,8 +1,14 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, Inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators, FormArray, FormControl } from '@angular/forms';
 import { ActivatedRoute, RouterModule, Router } from '@angular/router';
-import { CollectionService, CreateDocumentRequest, UpdateDocumentRequest, FieldDefinition, CollectionWithSchemaResponse } from '../services/collection.service';
+import { GetCollectionByIdUseCase } from '../application/use-cases/get-collection-by-id.use-case';
+import { GetDocumentByIdUseCase } from '../application/use-cases/get-document-by-id.use-case';
+import { CreateDocumentUseCase } from '../application/use-cases/create-document.use-case';
+import { UpdateDocumentUseCase } from '../application/use-cases/update-document.use-case';
+import { ICollectionRepository } from '../domain/ports/collection-repository.port';
+import { IDocumentRepository } from '../domain/ports/document-repository.port';
+import { COLLECTION_REPOSITORY, DOCUMENT_REPOSITORY } from '../app.config';
 
 interface FormFieldNode {
   name: string;
@@ -13,6 +19,14 @@ interface FormFieldNode {
   level: number;
   isArrayItem?: boolean;
   arrayParentPath?: string;
+}
+
+interface FieldDefinition {
+  type: string;
+  required?: boolean;
+  maxLength?: number;
+  properties?: Record<string, FieldDefinition>;
+  items?: FieldDefinition;
 }
 
 @Component({
@@ -35,13 +49,26 @@ export class DocumentFormComponent implements OnInit {
   collectionSchema: Record<string, FieldDefinition> = {};
   formFields: FormFieldNode[] = [];
 
+  // 🏗️ Casos de Uso (Hexagonal Architecture)
+  private getCollectionUseCase: GetCollectionByIdUseCase;
+  private getDocumentUseCase: GetDocumentByIdUseCase;
+  private createDocumentUseCase: CreateDocumentUseCase;
+  private updateDocumentUseCase: UpdateDocumentUseCase;
+
   constructor(
     private fb: FormBuilder,
     private route: ActivatedRoute,
     private router: Router,
-    private collectionService: CollectionService
+    @Inject(COLLECTION_REPOSITORY) private collectionRepository: ICollectionRepository,
+    @Inject(DOCUMENT_REPOSITORY) private documentRepository: IDocumentRepository
   ) {
     this.documentForm = this.fb.group({});
+
+    // Instanciar casos de uso
+    this.getCollectionUseCase = new GetCollectionByIdUseCase(this.collectionRepository);
+    this.getDocumentUseCase = new GetDocumentByIdUseCase(this.documentRepository);
+    this.createDocumentUseCase = new CreateDocumentUseCase(this.documentRepository);
+    this.updateDocumentUseCase = new UpdateDocumentUseCase(this.documentRepository);
   }
 
   ngOnInit() {
@@ -59,9 +86,11 @@ export class DocumentFormComponent implements OnInit {
 
   loadCollectionSchema() {
     this.loadingSchema = true;
-    this.collectionService.getCollection(this.collectionName).subscribe({
-      next: (response: CollectionWithSchemaResponse) => {
-        this.collectionSchema = response.schema;
+
+    // 🏗️ Usando GetCollectionByIdUseCase
+    this.getCollectionUseCase.execute(this.collectionName).subscribe({
+      next: (collection) => {
+        this.collectionSchema = collection.schema || {};
         this.parseSchema();
         this.buildFormFromSchema();
         this.loadingSchema = false;
@@ -72,7 +101,7 @@ export class DocumentFormComponent implements OnInit {
         }
       },
       error: (err) => {
-        this.error = 'Failed to load collection schema.';
+        this.error = err.message || 'Failed to load collection schema.';
         this.loadingSchema = false;
       }
     });
@@ -162,14 +191,16 @@ export class DocumentFormComponent implements OnInit {
   loadDocument() {
     if (this.documentId) {
       this.loading = true;
-      this.collectionService.getDocument(this.collectionName, this.documentId).subscribe({
+
+      // 🏗️ Usando GetDocumentByIdUseCase
+      this.getDocumentUseCase.execute(this.collectionName, this.documentId).subscribe({
         next: (document) => {
           this.loading = false;
           // Populate form with existing data
           this.populateFormWithData(document.data, this.documentForm);
         },
         error: (err) => {
-          this.error = 'Failed to load document.';
+          this.error = err.message || 'Failed to load document.';
           this.loading = false;
         }
       });
@@ -312,28 +343,26 @@ export class DocumentFormComponent implements OnInit {
       const data = this.documentForm.value;
 
       if (this.isEditMode && this.documentId) {
-        // Update existing document
-        const request: UpdateDocumentRequest = { data };
-        this.collectionService.updateDocument(this.collectionName, this.documentId, request).subscribe({
-          next: () => {
+        // 🏗️ Usando UpdateDocumentUseCase
+        this.updateDocumentUseCase.execute(this.collectionName, this.documentId, data).subscribe({
+          next: (document) => {
             this.loading = false;
             this.router.navigate(['/collections', this.collectionName, 'documents']);
           },
           error: (err) => {
-            this.error = err.error?.message || 'Failed to update document.';
+            this.error = err.message || 'Failed to update document.';
             this.loading = false;
           }
         });
       } else {
-        // Create new document
-        const request: CreateDocumentRequest = { data };
-        this.collectionService.createDocument(this.collectionName, request).subscribe({
-          next: () => {
+        // 🏗️ Usando CreateDocumentUseCase
+        this.createDocumentUseCase.execute(this.collectionName, data).subscribe({
+          next: (document) => {
             this.loading = false;
             this.router.navigate(['/collections', this.collectionName, 'documents']);
           },
           error: (err) => {
-            this.error = err.error?.message || 'Failed to create document.';
+            this.error = err.message || 'Failed to create document.';
             this.loading = false;
           }
         });

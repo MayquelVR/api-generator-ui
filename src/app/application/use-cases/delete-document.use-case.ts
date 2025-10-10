@@ -1,0 +1,21 @@
+import { Observable } from 'rxjs';
+import { IDocumentRepository } from '../../domain/ports/document-repository.port';
+
+/**
+ * Caso de Uso: Eliminar un documento
+ */
+export class DeleteDocumentUseCase {
+  constructor(private repository: IDocumentRepository) {}
+
+  execute(collectionName: string, id: number): Observable<void> {
+    if (!collectionName || collectionName.trim() === '') {
+      throw new Error('El nombre de la colección es requerido');
+    }
+
+    if (!id || id <= 0) {
+      throw new Error('El ID del documento es inválido');
+    }
+
+    return this.repository.delete(collectionName, id);
+  }
+}

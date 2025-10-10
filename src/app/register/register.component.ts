@@ -1,8 +1,10 @@
-import { Component } from '@angular/core';
+import { Component, Inject } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { AuthService } from '../services/auth.service';
 import { RouterModule } from '@angular/router';
+import { RegisterUseCase } from '../application/use-cases/register.use-case';
+import { IAuthRepository } from '../domain/ports/auth-repository.port';
+import { AUTH_REPOSITORY } from '../app.config';
 
 @Component({
   selector: 'apigen-register',
@@ -16,13 +18,22 @@ export class RegisterComponent {
   loading = false;
   error: string | null = null;
 
-  constructor(private fb: FormBuilder, private auth: AuthService) {
+  // 🏗️ Caso de Uso (Hexagonal Architecture)
+  private registerUseCase: RegisterUseCase;
+
+  constructor(
+    private fb: FormBuilder,
+    @Inject(AUTH_REPOSITORY) private authRepository: IAuthRepository
+  ) {
     this.registerForm = this.fb.group({
       username: ['', [Validators.required, Validators.minLength(3)]],
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(6)]],
       confirmPassword: ['', [Validators.required]]
     }, { validators: this.passwordsMatch });
+
+    // Instanciar caso de uso
+    this.registerUseCase = new RegisterUseCase(this.authRepository);
   }
 
   passwordsMatch(form: FormGroup) {
@@ -34,14 +45,17 @@ export class RegisterComponent {
   onSubmit() {
     if (this.registerForm.valid) {
       this.loading = true;
-      this.auth.register(this.registerForm.value).subscribe({
-        next: (res) => {
+      const { username, email, password } = this.registerForm.value;
+
+      // 🏗️ Usando RegisterUseCase
+      this.registerUseCase.execute(username, email, password).subscribe({
+        next: () => {
           this.submitted = true;
           this.loading = false;
           this.error = null;
         },
         error: (err) => {
-          this.error = 'Registration failed. Please try again.';
+          this.error = err.message || 'Registration failed. Please try again.';
           this.loading = false;
         }
       });

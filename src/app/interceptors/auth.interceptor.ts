@@ -21,15 +21,12 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   // PROACTIVE REFRESH: Check if token is about to expire
   if (authService.isAuthenticated() && authService.shouldRefreshToken()) {
-    console.log('🔄 Token about to expire, refreshing proactively...');
-
     if (!isRefreshing) {
       isRefreshing = true;
       refreshTokenSubject.next(null);
 
       return authService.refreshToken().pipe(
         switchMap((response: any) => {
-          console.log('✅ Token refreshed proactively');
           isRefreshing = false;
           refreshTokenSubject.next(response.token);
 
@@ -43,7 +40,6 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
           return next(clonedRequest);
         }),
         catchError((err) => {
-          console.error('❌ Proactive refresh failed');
           isRefreshing = false;
           authService.logout();
           router.navigate(['/login']);

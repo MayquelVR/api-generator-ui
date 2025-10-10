@@ -1,10 +1,16 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, Inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { SafeHtml } from '@angular/platform-browser';
-import { CollectionService, CollectionResponse, CollectionWithSchemaResponse } from '../services/collection.service';
-import { AuthService } from '../services/auth.service';
 import { JsonFormatterService } from '../services/json-formatter.service';
+import { Collection } from '../domain/models/collection.model';
+import { GetCollectionsUseCase } from '../application/use-cases/get-collections.use-case';
+import { DeleteCollectionUseCase } from '../application/use-cases/delete-collection.use-case';
+import { LogoutUseCase } from '../application/use-cases/logout.use-case';
+import { ICollectionRepository } from '../domain/ports/collection-repository.port';
+import { IAuthRepository } from '../domain/ports/auth-repository.port';
+import { IStoragePort } from '../domain/ports/storage.port';
+import { COLLECTION_REPOSITORY, AUTH_REPOSITORY, STORAGE_PORT } from '../app.config';
 
 interface SchemaField {
   name: string;
@@ -20,18 +26,29 @@ interface SchemaField {
   styleUrls: ['./collections.component.scss']
 })
 export class CollectionsComponent implements OnInit {
-  collections: CollectionResponse[] = [];
+  collections: Collection[] = [];
   loading = false;
   error: string | null = null;
   expandedSchemas: Map<string, any> = new Map();
   loadingSchemas: Set<string> = new Set();
 
+  // 🏗️ Casos de Uso (Hexagonal Architecture)
+  private getCollectionsUseCase: GetCollectionsUseCase;
+  private deleteCollectionUseCase: DeleteCollectionUseCase;
+  private logoutUseCase: LogoutUseCase;
+
   constructor(
-    private collectionService: CollectionService,
-    private authService: AuthService,
+    @Inject(COLLECTION_REPOSITORY) private collectionRepository: ICollectionRepository,
+    @Inject(AUTH_REPOSITORY) private authRepository: IAuthRepository,
+    @Inject(STORAGE_PORT) private storage: IStoragePort,
     private router: Router,
     private jsonFormatter: JsonFormatterService
-  ) {}
+  ) {
+    // Instanciar casos de uso
+    this.getCollectionsUseCase = new GetCollectionsUseCase(this.collectionRepository);
+    this.deleteCollectionUseCase = new DeleteCollectionUseCase(this.collectionRepository);
+    this.logoutUseCase = new LogoutUseCase(this.authRepository, this.storage);
+  }
 
   ngOnInit() {
     this.loadCollections();
@@ -40,7 +57,9 @@ export class CollectionsComponent implements OnInit {
   loadCollections() {
     this.loading = true;
     this.error = null;
-    this.collectionService.listCollections().subscribe({
+
+    // 🏗️ Usando GetCollectionsUseCase
+    this.getCollectionsUseCase.execute().subscribe({
       next: (collections) => {
         this.collections = collections;
         this.loading = false;
@@ -54,7 +73,8 @@ export class CollectionsComponent implements OnInit {
 
   deleteCollection(collectionName: string) {
     if (confirm(`Are you sure you want to delete collection "${collectionName}"?`)) {
-      this.collectionService.deleteCollection(collectionName).subscribe({
+      // 🏗️ Usando DeleteCollectionUseCase
+      this.deleteCollectionUseCase.execute(collectionName).subscribe({
         next: () => {
           this.loadCollections();
         },
@@ -72,9 +92,11 @@ export class CollectionsComponent implements OnInit {
     } else {
       // Load and show schema
       this.loadingSchemas.add(collectionName);
-      this.collectionService.getCollection(collectionName).subscribe({
-        next: (response: CollectionWithSchemaResponse) => {
-          this.expandedSchemas.set(collectionName, response.schema);
+
+      // 🏗️ Usando el repositorio directamente (podrías crear un GetCollectionByIdUseCase)
+      this.collectionRepository.getById(collectionName).subscribe({
+        next: (collection: Collection) => {
+          this.expandedSchemas.set(collectionName, collection.schema);
           this.loadingSchemas.delete(collectionName);
         },
         error: (err) => {
@@ -174,7 +196,8 @@ export class CollectionsComponent implements OnInit {
   }
 
   logout() {
-    this.authService.logout();
+    // 🏗️ Usando LogoutUseCase
+    this.logoutUseCase.execute();
     this.router.navigate(['/login']);
   }
 }

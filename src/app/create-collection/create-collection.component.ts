@@ -1,8 +1,10 @@
-import { Component } from '@angular/core';
+import { Component, Inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators, FormArray, AbstractControl } from '@angular/forms';
 import { RouterModule, Router } from '@angular/router';
-import { CollectionService, CreateCollectionRequest, FieldDefinition } from '../services/collection.service';
+import { CreateCollectionUseCase } from '../application/use-cases/create-collection.use-case';
+import { ICollectionRepository } from '../domain/ports/collection-repository.port';
+import { COLLECTION_REPOSITORY } from '../app.config';
 
 interface FieldNode {
   name: string;
@@ -13,6 +15,14 @@ interface FieldNode {
   items?: FieldNode;
   level: number;
   parent?: FieldNode;
+}
+
+interface FieldDefinition {
+  type: string;
+  required: boolean;
+  maxLength?: number;
+  properties?: Record<string, FieldDefinition>;
+  items?: FieldDefinition;
 }
 
 @Component({
@@ -32,14 +42,20 @@ export class CreateCollectionComponent {
   // Tree structure for nested fields
   fieldTree: FieldNode[] = [];
 
+  // 🏗️ Caso de Uso (Hexagonal Architecture)
+  private createCollectionUseCase: CreateCollectionUseCase;
+
   constructor(
     private fb: FormBuilder,
-    private collectionService: CollectionService,
-    private router: Router
+    private router: Router,
+    @Inject(COLLECTION_REPOSITORY) private collectionRepository: ICollectionRepository
   ) {
     this.collectionForm = this.fb.group({
       collectionName: ['', [Validators.required, Validators.pattern(/^[a-zA-Z0-9_-]+$/)]]
     });
+
+    // Instanciar caso de uso
+    this.createCollectionUseCase = new CreateCollectionUseCase(this.collectionRepository);
   }
 
   addRootField() {
@@ -180,18 +196,16 @@ export class CreateCollectionComponent {
         }
       });
 
-      const request: CreateCollectionRequest = {
-        collectionName: this.collectionForm.value.collectionName,
-        schema: schema
-      };
+      const collectionName = this.collectionForm.value.collectionName;
 
-      this.collectionService.createCollection(request).subscribe({
-        next: (res) => {
+      // 🏗️ Usando CreateCollectionUseCase
+      this.createCollectionUseCase.execute(collectionName, schema).subscribe({
+        next: (collection) => {
           this.loading = false;
           this.router.navigate(['/collections']);
         },
         error: (err) => {
-          this.error = err.error?.message || 'Failed to create collection. Collection name may already exist.';
+          this.error = err.message || 'Failed to create collection. Collection name may already exist.';
           this.loading = false;
         }
       });
