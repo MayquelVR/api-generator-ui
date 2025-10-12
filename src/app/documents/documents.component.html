@@ -59,20 +59,22 @@
       >
         <div class="flex justify-between items-start mb-4">
           <div class="flex-1">
-            <h3 class="text-lg font-semibold text-gray-800 mb-2">Document #{{ document.id }}</h3>
+            <h3 class="text-lg font-semibold text-gray-800 mb-2">Document</h3>
             <div class="text-sm text-gray-600 space-y-1">
+              <p><strong>UUID:</strong> <span class="font-mono text-xs">{{ document.uuid }}</span></p>
               <p><strong>Created:</strong> {{ document.createdAt | date:'short' }}</p>
+              <p><strong>Updated:</strong> {{ document.updatedAt | date:'short' }}</p>
             </div>
           </div>
           <div class="flex gap-2">
             <a
-              [routerLink]="['/collections', collectionName, 'documents', document.id, 'edit']"
+              [routerLink]="['/collections', collectionName, 'documents', document.uuid, 'edit']"
               class="px-3 py-1 bg-yellow-600 text-white rounded hover:bg-yellow-700 transition text-sm"
             >
               Edit
             </a>
             <button
-              (click)="deleteDocument(document.id)"
+              (click)="deleteDocument(document.uuid)"
               class="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition text-sm"
             >
               Delete
@@ -85,16 +87,16 @@
           <div class="flex justify-between items-center mb-2">
             <h4 class="text-sm font-semibold text-gray-700">Data:</h4>
             <button
-              (click)="toggleJsonView(document.id)"
+              (click)="toggleJsonView(document.uuid)"
               class="px-3 py-1 text-xs font-medium rounded transition"
-              [ngClass]="isJsonVisible(document.id) ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+              [ngClass]="isJsonVisible(document.uuid) ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
             >
-              {{ isJsonVisible(document.id) ? '👁️ Hide JSON' : '👁️ Show JSON' }}
+              {{ isJsonVisible(document.uuid) ? '👁️ Hide JSON' : '👁️ Show JSON' }}
             </button>
           </div>
 
           <!-- JSON View -->
-          <div *ngIf="isJsonVisible(document.id)" class="animate-fadeIn">
+          <div *ngIf="isJsonVisible(document.uuid)" class="animate-fadeIn">
             <pre
               class="p-4 bg-gray-900 rounded text-sm overflow-x-auto border border-gray-700 shadow-inner font-mono"
               [innerHTML]="getColoredJson(document.data)"
@@ -102,7 +104,7 @@
           </div>
 
           <!-- Compact Summary when collapsed -->
-          <div *ngIf="!isJsonVisible(document.id)" class="p-3 bg-gray-50 rounded border border-gray-200">
+          <div *ngIf="!isJsonVisible(document.uuid)" class="p-3 bg-gray-50 rounded border border-gray-200">
             <p class="text-sm text-gray-600">
               {{ getDocumentKeys(document.data).length }} field{{ getDocumentKeys(document.data).length !== 1 ? 's' : '' }}
               <span class="text-gray-400">—</span>

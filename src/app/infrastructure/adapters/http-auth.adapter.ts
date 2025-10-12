@@ -21,8 +21,8 @@ export class HttpAuthAdapter implements IAuthRepository {
     );
   }
 
-  register(username: string, email: string, password: string): Observable<void> {
-    return this.http.post<void>(`${this.apiUrl}/register`, { username, email, password });
+  register(uuid: string, username: string, email: string, password: string): Observable<void> {
+    return this.http.post<void>(`${this.apiUrl}/register`, { uuid, username, email, password });
   }
 
   refreshToken(refreshToken: string): Observable<User> {
@@ -45,6 +45,6 @@ export class HttpAuthAdapter implements IAuthRepository {
   }
 
   verifyAccount(token: string): Observable<void> {
-    return this.http.get<void>(`${this.apiUrl}/verify?token=${token}`);
+    return this.http.post<void>(`${this.apiUrl}/verify`, { token });
   }
 }

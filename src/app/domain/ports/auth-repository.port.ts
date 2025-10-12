@@ -6,7 +6,7 @@ import { User } from '../models/user.model';
  */
 export interface IAuthRepository {
   login(username: string, password: string): Observable<User>;
-  register(username: string, email: string, password: string): Observable<void>;
+  register(uuid: string, username: string, email: string, password: string): Observable<void>;
   refreshToken(refreshToken: string): Observable<User>;
   logout(): void;
   forgotPassword(email: string): Observable<void>;

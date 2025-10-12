@@ -24,7 +24,7 @@ export class DocumentsComponent implements OnInit {
   documents: Document[] = [];
   loading = false;
   error: string | null = null;
-  expandedDocuments: Set<number> = new Set();
+  expandedDocuments: Set<string> = new Set();
 
   // 🏗️ Casos de Uso (Hexagonal Architecture)
   private getDocumentsUseCase: GetDocumentsUseCase;
@@ -69,10 +69,10 @@ export class DocumentsComponent implements OnInit {
     });
   }
 
-  deleteDocument(documentId: number) {
+  deleteDocument(documentUuid: string) {
     if (confirm('Are you sure you want to delete this document?')) {
       // 🏗️ Usando DeleteDocumentUseCase
-      this.deleteDocumentUseCase.execute(this.collectionName, documentId).subscribe({
+      this.deleteDocumentUseCase.execute(this.collectionName, documentUuid).subscribe({
         next: () => {
           this.loadDocuments();
         },
@@ -124,16 +124,16 @@ export class DocumentsComponent implements OnInit {
     return JSON.stringify(value, null, 2);
   }
 
-  toggleJsonView(documentId: number) {
-    if (this.expandedDocuments.has(documentId)) {
-      this.expandedDocuments.delete(documentId);
+  toggleJsonView(documentUuid: string) {
+    if (this.expandedDocuments.has(documentUuid)) {
+      this.expandedDocuments.delete(documentUuid);
     } else {
-      this.expandedDocuments.add(documentId);
+      this.expandedDocuments.add(documentUuid);
     }
   }
 
-  isJsonVisible(documentId: number): boolean {
-    return this.expandedDocuments.has(documentId);
+  isJsonVisible(documentUuid: string): boolean {
+    return this.expandedDocuments.has(documentUuid);
   }
 
   getColoredJson(data: any): SafeHtml {

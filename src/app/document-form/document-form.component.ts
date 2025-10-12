@@ -38,7 +38,7 @@ interface FieldDefinition {
 })
 export class DocumentFormComponent implements OnInit {
   collectionName: string = '';
-  documentId: number | null = null;
+  documentUuid: string | null = null;
   documentForm: FormGroup;
   loading = false;
   loadingSchema = false;
@@ -73,10 +73,10 @@ export class DocumentFormComponent implements OnInit {
 
   ngOnInit() {
     this.collectionName = this.route.snapshot.paramMap.get('collectionName') || '';
-    const docId = this.route.snapshot.paramMap.get('documentId');
+    const docUuid = this.route.snapshot.paramMap.get('documentId'); // Note: route param name stays same for compatibility
 
-    if (docId) {
-      this.documentId = parseInt(docId);
+    if (docUuid) {
+      this.documentUuid = docUuid;
       this.isEditMode = true;
     }
 
@@ -96,7 +96,7 @@ export class DocumentFormComponent implements OnInit {
         this.loadingSchema = false;
 
         // If edit mode, load the document data
-        if (this.isEditMode && this.documentId) {
+        if (this.isEditMode && this.documentUuid) {
           this.loadDocument();
         }
       },
@@ -189,11 +189,11 @@ export class DocumentFormComponent implements OnInit {
   }
 
   loadDocument() {
-    if (this.documentId) {
+    if (this.documentUuid) {
       this.loading = true;
 
       // 🏗️ Usando GetDocumentByIdUseCase
-      this.getDocumentUseCase.execute(this.collectionName, this.documentId).subscribe({
+      this.getDocumentUseCase.execute(this.collectionName, this.documentUuid).subscribe({
         next: (document) => {
           this.loading = false;
           // Populate form with existing data
@@ -342,9 +342,9 @@ export class DocumentFormComponent implements OnInit {
 
       const data = this.documentForm.value;
 
-      if (this.isEditMode && this.documentId) {
+      if (this.isEditMode && this.documentUuid) {
         // 🏗️ Usando UpdateDocumentUseCase
-        this.updateDocumentUseCase.execute(this.collectionName, this.documentId, data).subscribe({
+        this.updateDocumentUseCase.execute(this.collectionName, this.documentUuid, data).subscribe({
           next: (document) => {
             this.loading = false;
             this.router.navigate(['/collections', this.collectionName, 'documents']);

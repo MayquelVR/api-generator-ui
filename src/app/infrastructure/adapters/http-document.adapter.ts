@@ -43,29 +43,33 @@ export class HttpDocumentAdapter implements IDocumentRepository {
     );
   }
 
-  getById(collectionName: string, id: number): Observable<Document> {
-    return this.http.get<any>(`${this.apiUrl}/${collectionName}/documents/${id}`).pipe(
+  getById(collectionName: string, uuid: string): Observable<Document> {
+    return this.http.get<any>(`${this.apiUrl}/${collectionName}/documents/${uuid}`).pipe(
       map(doc => Document.fromResponse(doc, collectionName))
     );
   }
 
-  create(collectionName: string, data: Record<string, any>): Observable<Document> {
-    // El backend espera el formato: { "data": {...} }
-    const payload = { data };
+  create(collectionName: string, data: Record<string, any>, uuid?: string): Observable<Document> {
+    // El backend espera el formato: { "uuid": "...", "data": {...} }
+    // El UUID es opcional - si no se proporciona, el backend genera uno
+    const payload: any = { data };
+    if (uuid) {
+      payload.uuid = uuid;
+    }
     return this.http.post<any>(`${this.apiUrl}/${collectionName}/documents`, payload).pipe(
       map(doc => Document.fromResponse(doc, collectionName))
     );
   }
 
-  update(collectionName: string, id: number, data: Record<string, any>): Observable<Document> {
+  update(collectionName: string, uuid: string, data: Record<string, any>): Observable<Document> {
     // El backend espera el formato: { "data": {...} }
     const payload = { data };
-    return this.http.put<any>(`${this.apiUrl}/${collectionName}/documents/${id}`, payload).pipe(
+    return this.http.put<any>(`${this.apiUrl}/${collectionName}/documents/${uuid}`, payload).pipe(
       map(doc => Document.fromResponse(doc, collectionName))
     );
   }
 
-  delete(collectionName: string, id: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${collectionName}/documents/${id}`);
+  delete(collectionName: string, uuid: string): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${collectionName}/documents/${uuid}`);
   }
 }

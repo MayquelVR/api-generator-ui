@@ -8,7 +8,7 @@ import { Collection } from '../models/collection.model';
 export interface ICollectionRepository {
   getAll(): Observable<Collection[]>;
   getById(name: string): Observable<Collection>;
-  create(name: string, schema: Record<string, any>): Observable<Collection>;
+  create(name: string, schema: Record<string, any>, uuid?: string): Observable<Collection>;
   delete(name: string): Observable<void>;
 }
 

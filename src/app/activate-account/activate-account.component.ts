@@ -33,14 +33,22 @@ export class ActivateAccountComponent implements OnInit {
       // 🏗️ Usando VerifyAccountUseCase
       this.verifyAccountUseCase.execute(token).subscribe({
         next: () => {
-          this.message = 'Your account has been activated!';
+          this.message = 'Your account has been activated successfully!';
           this.success = true;
           this.loading = false;
         },
         error: (err) => {
-          this.message = err.message || 'Activation failed. The link may be invalid or expired.';
-          this.success = false;
           this.loading = false;
+          this.success = false;
+
+          // Manejar errores según código de estado HTTP
+          if (err.status === 400) {
+            this.message = 'Invalid token or account already activated.';
+          } else if (err.status === 409) {
+            this.message = 'Token has expired. Please request a new activation link.';
+          } else {
+            this.message = 'Activation failed. Please try again or contact support.';
+          }
         }
       });
     } else {

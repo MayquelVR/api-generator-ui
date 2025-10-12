@@ -1,12 +1,20 @@
 import { inject } from '@angular/core';
 import { Router, CanActivateFn } from '@angular/router';
-import { AuthService } from '../services/auth.service';
+import { IStoragePort } from '../domain/ports/storage.port';
+import { STORAGE_PORT } from '../app.config';
 
+/**
+ * Guard para la ruta raíz que redirige según el estado de autenticación
+ * Usa arquitectura hexagonal con StoragePort
+ */
 export const rootGuard: CanActivateFn = (route, state) => {
-  const authService = inject(AuthService);
+  const storage = inject(STORAGE_PORT);
   const router = inject(Router);
 
-  if (authService.isAuthenticated()) {
+  // Verificar si existe el token de autenticación
+  const isAuthenticated = storage.get('auth_token') !== null;
+
+  if (isAuthenticated) {
     router.navigate(['/collections']);
     return false;
   } else {

@@ -28,8 +28,15 @@ export class HttpCollectionAdapter implements ICollectionRepository {
     );
   }
 
-  create(name: string, schema: Record<string, any>): Observable<Collection> {
-    return this.http.post<any>(this.apiUrl, { collectionName: name, schema }).pipe(
+  create(name: string, schema: Record<string, any>, uuid?: string): Observable<Collection> {
+    const payload: any = { collectionName: name, schema };
+
+    // Agregar UUID si se proporciona
+    if (uuid) {
+      payload.uuid = uuid;
+    }
+
+    return this.http.post<any>(this.apiUrl, payload).pipe(
       map(collection => Collection.fromResponse(collection))
     );
   }

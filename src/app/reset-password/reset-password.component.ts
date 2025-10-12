@@ -57,8 +57,16 @@ export class ResetPasswordComponent {
           this.error = null;
         },
         error: (err) => {
-          this.error = err.message || 'Failed to reset password. Please try again.';
           this.loading = false;
+
+          // Manejar errores según código de estado HTTP
+          if (err.status === 400) {
+            this.error = 'Invalid token or password reset link already used.';
+          } else if (err.status === 409) {
+            this.error = 'Token has expired. Please request a new password reset link.';
+          } else {
+            this.error = 'Failed to reset password. Please try again or contact support.';
+          }
         }
       });
     } else {

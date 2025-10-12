@@ -1,8 +1,10 @@
 import { Observable } from 'rxjs';
 import { IAuthRepository } from '../../domain/ports/auth-repository.port';
+import { generateUuidV7 } from '../../infrastructure/utils/uuid.util';
 
 /**
  * Caso de Uso: Registrar nuevo usuario
+ * Genera automáticamente un UUID v7 para el nuevo usuario
  */
 export class RegisterUseCase {
   constructor(private authRepository: IAuthRepository) {}
@@ -30,6 +32,9 @@ export class RegisterUseCase {
       throw new Error('La contraseña debe tener al menos 6 caracteres');
     }
 
-    return this.authRepository.register(username, email, password);
+    // Generar UUID v7 para el nuevo usuario
+    const uuid = generateUuidV7();
+
+    return this.authRepository.register(uuid, username, email, password);
   }
 }
