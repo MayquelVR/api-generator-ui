@@ -11,6 +11,7 @@ import { ICollectionRepository } from '../domain/ports/collection-repository.por
 import { IAuthRepository } from '../domain/ports/auth-repository.port';
 import { IStoragePort } from '../domain/ports/storage.port';
 import { COLLECTION_REPOSITORY, AUTH_REPOSITORY, STORAGE_PORT } from '../app.config';
+import { ThemeToggleComponent } from '../shared/theme-toggle/theme-toggle.component';
 
 interface SchemaField {
   name: string;
@@ -21,7 +22,7 @@ interface SchemaField {
 @Component({
   selector: 'apigen-collections',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, ThemeToggleComponent],
   templateUrl: './collections.component.html',
   styleUrls: ['./collections.component.scss']
 })
