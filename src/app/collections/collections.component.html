@@ -22,9 +22,11 @@
   <!-- Main Content -->
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <!-- Error Message -->
-    <div *ngIf="error" class="mb-4 p-4 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-200 rounded">
-      {{ error }}
-    </div>
+    @if (error) {
+      <div class="mb-4 p-4 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-200 rounded">
+        {{ error }}
+      </div>
+    }
 
     <!-- Header with Create Button -->
     <div class="flex justify-between items-center mb-6">
@@ -45,70 +47,77 @@
      }
 
     <!-- Empty State -->
-    <div *ngIf="!loading && collections.length === 0" class="text-center py-12">
-      <p class="text-gray-600 dark:text-gray-400 mb-4">No collections yet. Create your first collection!</p>
-      <a
-        routerLink="/collections/create"
-        class="inline-block px-6 py-3 bg-blue-600 dark:bg-blue-500 text-white rounded hover:bg-blue-700 dark:hover:bg-blue-600 transition"
-      >
-        Create Collection
-      </a>
-    </div>
+    @if (!loading && collections.length === 0) {
+      <div class="text-center py-12">
+        <p class="text-gray-600 dark:text-gray-400 mb-4">No collections yet. Create your first collection!</p>
+        <a
+          routerLink="/collections/create"
+          class="inline-block px-6 py-3 bg-blue-600 dark:bg-blue-500 text-white rounded hover:bg-blue-700 dark:hover:bg-blue-600 transition"
+        >
+          Create Collection
+        </a>
+      </div>
+    }
 
     <!-- Collections Grid -->
-    <div *ngIf="!loading && collections.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <div
-        *ngFor="let collection of collections"
-        class="bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-xl transition-shadow p-6 border border-gray-200 dark:border-gray-700"
-      >
-        <div class="flex justify-between items-start mb-4">
-          <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-100">{{ collection.collectionName }}</h3>
-          <button
-            (click)="deleteCollection(collection.collectionName)"
-            class="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
-          >
-            🗑️
-          </button>
-        </div>
-        <div class="text-sm text-gray-600 dark:text-gray-400 space-y-2">
-          <p><strong>Documents:</strong> {{ collection.documentCount }}</p>
-          <p><strong>Created:</strong> {{ collection.createdAt | date:'short' }}</p>
-        </div>
+    @if (!loading && collections.length > 0) {
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        @for (collection of collections; track collection.collectionName) {
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-xl transition-shadow p-6 border border-gray-200 dark:border-gray-700">
+            <div class="flex justify-between items-start mb-4">
+              <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-100">{{ collection.collectionName }}</h3>
+              <button
+                (click)="deleteCollection(collection.collectionName)"
+                class="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
+              >
+                🗑️
+              </button>
+            </div>
+            <div class="text-sm text-gray-600 dark:text-gray-400 space-y-2">
+              <p><strong>Documents:</strong> {{ collection.documentCount }}</p>
+              <p><strong>Created:</strong> {{ collection.createdAt | date:'short' }}</p>
+            </div>
 
-        <!-- Action Buttons -->
-        <div class="mt-4 space-y-2">
-          <a
-            [routerLink]="['/collections', collection.collectionName, 'documents']"
-            class="block px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white text-center rounded hover:bg-blue-700 dark:hover:bg-blue-600 transition"
-          >
-            📄 View Documents
-          </a>
-          <button
-            (click)="toggleSchema(collection.collectionName)"
-            class="w-full px-4 py-2 text-sm font-medium rounded transition"
-            [ngClass]="isSchemaVisible(collection.collectionName) ?
-              'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-800' :
-              'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'"
-            [disabled]="isSchemaLoading(collection.collectionName)"
-          >
-            <span *ngIf="isSchemaLoading(collection.collectionName)">⏳ Loading Schema...</span>
-            <span *ngIf="!isSchemaLoading(collection.collectionName)">
-              {{ isSchemaVisible(collection.collectionName) ? '🔼 Hide Schema' : '🔽 Show Schema' }}
-            </span>
-          </button>
-        </div>
+            <!-- Action Buttons -->
+            <div class="mt-4 space-y-2">
+              <a
+                [routerLink]="['/collections', collection.collectionName, 'documents']"
+                class="block px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white text-center rounded hover:bg-blue-700 dark:hover:bg-blue-600 transition"
+              >
+                📄 View Documents
+              </a>
+              <button
+                (click)="toggleSchema(collection.collectionName)"
+                class="w-full px-4 py-2 text-sm font-medium rounded transition"
+                [ngClass]="isSchemaVisible(collection.collectionName) ?
+                  'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-800' :
+                  'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'"
+                [disabled]="isSchemaLoading(collection.collectionName)"
+              >
+                @if (isSchemaLoading(collection.collectionName)) {
+                  <span>⏳ Loading Schema...</span>
+                }
+                @if (!isSchemaLoading(collection.collectionName)) {
+                  <span>{{ isSchemaVisible(collection.collectionName) ? '🔼 Hide Schema' : '🔽 Show Schema' }}</span>
+                }
+              </button>
+            </div>
 
-        <!-- Schema View -->
-        <div *ngIf="isSchemaVisible(collection.collectionName)" class="mt-4 animate-fadeIn">
-          <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Schema:</h4>
+            <!-- Schema View -->
+            @if (isSchemaVisible(collection.collectionName)) {
+              <div class="mt-4 animate-fadeIn">
+                <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Schema:</h4>
 
-          <!-- Simplified JSON Schema with VS Code colors -->
-          <pre
-            class="p-4 bg-gray-900 dark:bg-gray-950 rounded-lg text-sm border border-gray-700 dark:border-gray-600 font-mono max-h-96 overflow-auto shadow-lg"
-            [innerHTML]="getSimpleSchemaView(expandedSchemas.get(collection.collectionName))"
-          ></pre>
-        </div>
+                <!-- Simplified JSON Schema with VS Code colors -->
+                <pre
+                  class="p-4 bg-gray-900 dark:bg-gray-950 rounded-lg text-sm border border-gray-700 dark:border-gray-600 font-mono max-h-96 overflow-auto shadow-lg"
+                  [innerHTML]="getSimpleSchemaView(expandedSchemas.get(collection.collectionName))"
+                ></pre>
+              </div>
+            }
+          </div>
+        }
       </div>
-    </div>
+    }
   </main>
 </div>
